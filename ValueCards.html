@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Values Card Sort</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --header-color: #2c3e50;
+            --border-color: #dcdde1;
+            --accent-color: #2980b9;
+            --warning-color: #e67e22;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .user-info {
+            margin: 10px auto;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"], textarea {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input[type="text"] { flex: 1; min-width: 200px; }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        #export-btn { background-color: var(--accent-color); }
+        #export-btn:hover { background-color: #1f6391; }
+        #view-btn { background-color: #27ae60; }
+        #view-btn:hover { background-color: #1e8449; }
+
+        /* --- LAYOUT MODES --- */
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transition: all 0.3s ease;
+        }
+
+        /* Side-by-Side Mode (Desktop focus) */
+        .container.side-by-side {
+            flex-direction: row;
+            align-items: flex-start;
+        }
+
+        .side-by-side #deck-container {
+            width: 300px;
+            position: sticky;
+            top: 20px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .side-by-side .columns-grid {
+            flex: 1;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+
+        /* Default Styles */
+        #deck-container {
+            background: #ebebeb;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px dashed #ccc;
+        }
+
+        .columns-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .columns-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        }
+
+        .column {
+            background: #dfe6e9;
+            border-radius: 8px;
+            min-height: 300px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column h2 {
+            font-size: 0.9rem;
+            text-align: center;
+            color: var(--header-color);
+            border-bottom: 2px solid #b2bec3;
+            padding-bottom: 8px;
+            margin: 5px 0;
+        }
+
+        .limit-note { font-size: 0.7rem; color: var(--warning-color); display: block; }
+
+        .card-list { min-height: 150px; flex-grow: 1; padding: 5px; }
+
+        .value-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: grab;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .value-card h3 { margin: 0 0 5px 0; font-size: 0.85rem; text-transform: uppercase; color: var(--accent-color); }
+        .value-card p { margin: 0; font-size: 0.75rem; color: #7f8c8d; line-height: 1.2; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Personal Values Card Sort</h1>
+    <div class="user-info">
+        <div class="input-row">
+            <input type="text" id="user-name" placeholder="Enter your name...">
+            <div class="btn-group">
+                <button id="view-btn">Toggle Layout</button>
+                <button id="export-btn">Export (.txt)</button>
+            </div>
+        </div>
+        <textarea id="user-notes" placeholder="Add your reflections or notes here..."></textarea>
+    </div>
+</header>
+
+<div class="container" id="main-container">
+    <div id="deck-container">
+        <h2>Master Deck (83)</h2>
+        <div id="master-deck" class="card-list"></div>
+    </div>
+
+    <div class="columns-grid">
+        <div class="column">
+            <h2>Most Important <span class="limit-note">(Limit 5)</span></h2>
+            <div id="col-most" class="card-list" data-limit="5"></div>
+        </div>
+        <div class="column">
+            <h2>Very Important</h2>
+            <div id="col-very" class="card-list"></div>
+        </div>
+        <div class="column">
+            <h2>Important</h2>
+            <div id="col-important" class="card-list"></div>
+        </div>
+        <div class="column">
+            <h2>Somewhat Important</h2>
+            <div id="col-somewhat" class="card-list"></div>
+        </div>
+        <div class="column">
+            <h2>Not Important</h2>
+            <div id="col-not" class="card-list"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Data from UNM 2001 instrument 
+    const valuesData = [
+        { t: "Acceptance", d: "to be accepted as I am" },
+        { t: "Achievement", d: "to have important accomplishments" },
+        { t: "Accuracy", d: "to be accurate in my opinions and beliefs" },
+        { t: "Adventure", d: "to have new and exciting experiences" },
+        { t: "Attractiveness", d: "to be physically attractive" },
+        { t: "Authority", d: "to be in charge of and responsible for others" },
+        { t: "Autonomy", d: "to be self-determined and independent" },
+        { t: "Beauty", d: "to appreciate beauty around me" },
+        { t: "Caring", d: "to take care of others" },
+        { t: "Challenge", d: "to take on difficult tasks and problems" },
+        { t: "Change", d: "to have a life full of change and variety" },
+        { t: "Comfort", d: "to have a pleasant and comfortable life" },
+        { t: "Commitment", d: "to make enduring, meaningful commitments" },
+        { t: "Compassion", d: "to feel and act on concern for others" },
+        { t: "Contribution", d: "to make a lasting contribution in the world" },
+        { t: "Cooperation", d: "to work collaboratively with others" },
+        { t: "Courtesy", d: "to be considerate and polite toward others" },
+        { t: "Creativity", d: "to have new and original ideas" },
+        { t: "Dependability", d: "to be reliable and trustworthy" },
+        { t: "Duty", d: "to carry out my duties and obligations" },
+        { t: "Ecology", d: "to live in harmony with the environment" },
+        { t: "Excitement", d: "to have a life full of thrills and stimulation" },
+        { t: "Faithfulness", d: "to be loyal and true in relationships" },
+        { t: "Fame", d: "to be known and recognized" },
+        { t: "Family", d: "to have a happy, loving family" },
+        { t: "Fitness", d: "to be physically fit and strong" },
+        { t: "Flexibility", d: "to adjust to new circumstances easily" },
+        { t: "Forgiveness", d: "to be forgiving of others" },
+        { t: "Friendship", d: "to have close, supportive friends" },
+        { t: "Fun", d: "to play and have fun" },
+        { t: "Generosity", d: "to give what I have to others" },
+        { t: "Genuineness", d: "to act in a manner that is true to who I am" },
+        { t: "God's Will", d: "to seek and obey the will of God" },
+        { t: "Growth", d: "to keep changing and growing" },
+        { t: "Health", d: "to be physically well and healthy" },
+        { t: "Helpfulness", d: "to be helpful to others" },
+        { t: "Honesty", d: "to be honest and truthful" },
+        { t: "Hope", d: "to maintain a positive and optimistic outlook" },
+        { t: "Humility", d: "to be modest and unassuming" },
+        { t: "Humor", d: "to see the humorous side of myself and the world" },
+        { t: "Independence", d: "to be free from dependence on others" },
+        { t: "Industry", d: "to work hard and well at my life tasks" },
+        { t: "Inner Peace", d: "to experience personal peace" },
+        { t: "Intimacy", d: "to share my innermost experiences with others" },
+        { t: "Justice", d: "to promote fair and equal treatment for all" },
+        { t: "Knowledge", d: "to learn and contribute valuable knowledge" },
+        { t: "Leisure", d: "to take time to relax and enjoy" },
+        { t: "Loved", d: "to be loved by those close to me" },
+        { t: "Loving", d: "to give love to others" },
+        { t: "Mastery", d: "to be competent in my everyday activities" },
+        { t: "Mindfulness", d: "to live conscious and mindful of the present moment" },
+        { t: "Moderation", d: "to avoid excesses and find a middle ground" },
+        { t: "Monogamy", d: "to have one close, loving relationship" },
+        { t: "Non-Conformity", d: "to question and challenge authority and norms" },
+        { t: "Nurturance", d: "to take care of and nurture others" },
+        { t: "Openness", d: "to be open to new experiences, ideas, and options" },
+        { t: "Order", d: "to have a life that is well-ordered and organized" },
+        { t: "Passion", d: "to have deep feelings about ideas, activities, or people" },
+        { t: "Pleasure", d: "to feel good" },
+        { t: "Popularity", d: "to be well-liked by many people" },
+        { t: "Power", d: "to have control over others" },
+        { t: "Purpose", d: "to have meaning and direction in my life" },
+        { t: "Rationality", d: "to be guided by reason and logic" },
+        { t: "Realism", d: "to see and act realistically and practically" },
+        { t: "Responsibility", d: "to make and carry out responsible decisions" },
+        { t: "Risk", d: "to take risks and chances" },
+        { t: "Romance", d: "to have intense, exciting love in my life" },
+        { t: "Safety", d: "to be safe and secure" },
+        { t: "Self-Acceptance", d: "to accept myself as I am" },
+        { t: "Self-Control", d: "to be disciplined in my own actions" },
+        { t: "Self-Esteem", d: "to feel good about myself" },
+        { t: "Self-Knowledge", d: "to have a deep and honest understanding of myself" },
+        { t: "Service", d: "to be of service to others" },
+        { t: "Sexuality", d: "to have an active and satisfying sex life" },
+        { t: "Simplicity", d: "to live life simply, with minimal needs" },
+        { t: "Solitude", d: "to have time and space where I can be apart from others" },
+        { t: "Spirituality", d: "to grow and mature spiritually" },
+        { t: "Stability", d: "to have a life that stays fairly consistent" },
+        { t: "Tolerance", d: "to accept and respect those who differ from me" },
+        { t: "Tradition", d: "to follow respected patterns of the past" },
+        { t: "Virtue", d: "to live a morally pure and excellent life" },
+        { t: "Wealth", d: "to have plenty of money" },
+        { t: "World Peace", d: "to work to promote peace in the world" }
+    ];
+
+    const masterDeck = document.getElementById('master-deck');
+    valuesData.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'value-card';
+        card.innerHTML = `<h3>${item.t}</h3><p>${item.d}</p>`;
+        masterDeck.appendChild(card);
+    });
+
+    const lists = document.querySelectorAll('.card-list');
+    lists.forEach(list => {
+        new Sortable(list, {
+            group: 'shared',
+            animation: 150,
+            onAdd: function (evt) {
+                const limit = evt.to.getAttribute('data-limit');
+                if (limit && evt.to.children.length > parseInt(limit)) {
+                    alert("The Most Important section is limited to 5 cards.");
+                    evt.from.appendChild(evt.item);
+                }
+            }
+        });
+    });
+
+    // Layout Toggle Logic
+    document.getElementById('view-btn').onclick = function() {
+        document.getElementById('main-container').classList.toggle('side-by-side');
+    };
+
+    // Export Logic
+    document.getElementById('export-btn').onclick = function() {
+        const name = document.getElementById('user-name').value || "Unnamed User";
+        const notes = document.getElementById('user-notes').value || "No notes.";
+        let content = `PERSONAL VALUES SORT\nName: ${name}\nDate: ${new Date().toLocaleDateString()}\n\n`;
+        content += `--- NOTES ---\n${notes}\n\n`;
+        
+        const sections = [
+            { id: 'col-most', label: 'MOST IMPORTANT' },
+            { id: 'col-very', label: 'VERY IMPORTANT' },
+            { id: 'col-important', label: 'IMPORTANT' },
+            { id: 'col-somewhat', label: 'SOMEWHAT IMPORTANT' },
+            { id: 'col-not', label: 'NOT IMPORTANT' }
+        ];
+
+        sections.forEach(sec => {
+            content += `--- ${sec.label} ---\n`;
+            const cards = document.getElementById(sec.id).querySelectorAll('h3');
+            if (cards.length === 0) content += "(None)\n";
+            cards.forEach(c => content += `- ${c.innerText}\n`);
+            content += `\n`;
+        });
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Values_${name.replace(/\s+/g, '_')}.txt`;
+        a.click();
+    };
+</script>
+
+</body>
+</html>
