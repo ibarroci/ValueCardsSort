@@ -1,15 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-    <!-- Google Tag Manager -->
-<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-N8FTRL2X');</script>
-<!-- End Google Tag Manager -->
-    
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-N8FTRL2X');</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal Values Card Sort</title>
@@ -88,7 +84,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         #view-btn { background-color: #27ae60; }
         #view-btn:hover { background-color: #1e8449; }
 
-        /* --- LAYOUT MODES --- */
         .container {
             display: flex;
             flex-direction: column;
@@ -96,7 +91,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             transition: all 0.3s ease;
         }
 
-        /* Side-by-Side Mode (Desktop focus) */
+        /* DEFAULT VIEW: Side-by-Side */
         .container.side-by-side {
             flex-direction: row;
             align-items: flex-start;
@@ -115,7 +110,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         }
 
-        /* Default Styles */
         #deck-container {
             background: #ebebeb;
             padding: 15px;
@@ -170,10 +164,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     </style>
 </head>
 <body>
-<!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-N8FTRL2X"
 height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
+
 <header>
     <h1>Personal Values Card Sort</h1>
     <div class="user-info">
@@ -188,9 +181,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
 </header>
 
-<div class="container" id="main-container">
+<div class="container side-by-side" id="main-container">
     <div id="deck-container">
-        <h2>Master Deck (83)</h2>
+        <h2>Master Deck (<span id="deck-count">0</span>)</h2>
         <div id="master-deck" class="card-list"></div>
     </div>
 
@@ -219,7 +212,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </div>
 
 <script>
-    // Data from UNM 2001 instrument 
     const valuesData = [
         { t: "Acceptance", d: "to be accepted as I am" },
         { t: "Achievement", d: "to have important accomplishments" },
@@ -307,12 +299,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     ];
 
     const masterDeck = document.getElementById('master-deck');
+    const deckCountSpan = document.getElementById('deck-count');
+
+    function updateDeckCount() {
+        deckCountSpan.innerText = masterDeck.children.length;
+    }
+
     valuesData.forEach(item => {
         const card = document.createElement('div');
         card.className = 'value-card';
         card.innerHTML = `<h3>${item.t}</h3><p>${item.d}</p>`;
         masterDeck.appendChild(card);
     });
+    updateDeckCount();
 
     const lists = document.querySelectorAll('.card-list');
     lists.forEach(list => {
@@ -325,16 +324,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     alert("The Most Important section is limited to 5 cards.");
                     evt.from.appendChild(evt.item);
                 }
+                updateDeckCount();
+            },
+            onRemove: function() {
+                updateDeckCount();
             }
         });
     });
 
-    // Layout Toggle Logic
     document.getElementById('view-btn').onclick = function() {
         document.getElementById('main-container').classList.toggle('side-by-side');
     };
 
-    // Export Logic
     document.getElementById('export-btn').onclick = function() {
         const name = document.getElementById('user-name').value || "Unnamed User";
         const notes = document.getElementById('user-notes').value || "No notes.";
@@ -364,6 +365,5 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         a.click();
     };
 </script>
-
 </body>
 </html>
