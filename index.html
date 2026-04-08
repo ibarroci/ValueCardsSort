@@ -18,6 +18,7 @@
             --border-color: #dcdde1;
             --accent-color: #2980b9;
             --warning-color: #e67e22;
+            --success-color: #27ae60;
         }
 
         body {
@@ -45,60 +46,69 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
+        .batch-actions {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px auto;
+            max-width: 1200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
         .input-row {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
 
-        input[type="text"], textarea {
-            padding: 12px;
+        input[type="text"], textarea, select {
+            padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             font-family: inherit;
             font-size: 1rem;
-            width: 100%;
-            box-sizing: border-box;
         }
 
         input[type="text"] { flex: 1; min-width: 200px; }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-        }
+        textarea { width: 100%; box-sizing: border-box; }
 
         button {
-            padding: 12px 20px;
+            padding: 10px 18px;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
             font-size: 0.9rem;
-            transition: background 0.2s;
+            transition: opacity 0.2s;
         }
 
+        button:hover { opacity: 0.9; }
+
         #export-btn { background-color: var(--accent-color); }
-        #export-btn:hover { background-color: #1f6391; }
-        #view-btn { background-color: #27ae60; }
-        #view-btn:hover { background-color: #1e8449; }
+        #view-btn { background-color: var(--success-color); }
+        #move-selected-btn { background-color: var(--accent-color); }
+        #clear-selection-btn { background-color: #95a5a6; }
 
         .container {
             display: flex;
             flex-direction: column;
             gap: 20px;
-            transition: all 0.3s ease;
         }
 
-        /* DEFAULT VIEW: Side-by-Side */
         .container.side-by-side {
             flex-direction: row;
             align-items: flex-start;
         }
 
         .side-by-side #deck-container {
-            width: 300px;
+            width: 320px;
             position: sticky;
             top: 20px;
             max-height: 85vh;
@@ -157,8 +167,25 @@
             margin-bottom: 10px;
             cursor: grab;
             box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            transition: transform 0.1s;
         }
 
+        .value-card.selected {
+            border: 2px solid var(--accent-color);
+            background-color: #eaf2f8;
+        }
+
+        .card-checkbox {
+            margin-top: 4px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .card-content { flex: 1; pointer-events: none; }
         .value-card h3 { margin: 0 0 5px 0; font-size: 0.85rem; text-transform: uppercase; color: var(--accent-color); }
         .value-card p { margin: 0; font-size: 0.75rem; color: #7f8c8d; line-height: 1.2; }
     </style>
@@ -178,6 +205,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
         </div>
         <textarea id="user-notes" placeholder="Add your reflections or notes here..."></textarea>
+    </div>
+
+    <div class="batch-actions">
+        <strong>Batch Move:</strong>
+        <span id="selected-count">0 selected</span>
+        <select id="target-column">
+            <option value="master-deck">Master Deck</option>
+            <option value="col-most">Most Important</option>
+            <option value="col-very">Very Important</option>
+            <option value="col-important">Important</option>
+            <option value="col-somewhat">Somewhat Important</option>
+            <option value="col-not">Not Important</option>
+        </select>
+        <button id="move-selected-btn">Move Selected</button>
+        <button id="clear-selection-btn">Clear Selection</button>
     </div>
 </header>
 
@@ -300,19 +342,40 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     const masterDeck = document.getElementById('master-deck');
     const deckCountSpan = document.getElementById('deck-count');
+    const selectedCountSpan = document.getElementById('selected-count');
 
-    function updateDeckCount() {
-        deckCountSpan.innerText = masterDeck.children.length;
+    function updateCounts() {
+        deckCountSpan.innerText = masterDeck.querySelectorAll('.value-card').length;
+        const selectedCount = document.querySelectorAll('.card-checkbox:checked').length;
+        selectedCountSpan.innerText = `${selectedCount} selected`;
     }
 
+    // Initialize Cards
     valuesData.forEach(item => {
         const card = document.createElement('div');
         card.className = 'value-card';
-        card.innerHTML = `<h3>${item.t}</h3><p>${item.d}</p>`;
+        card.innerHTML = `
+            <input type="checkbox" class="card-checkbox">
+            <div class="card-content">
+                <h3>${item.t}</h3>
+                <p>${item.d}</p>
+            </div>
+        `;
+        
+        card.addEventListener('click', (e) => {
+            const checkbox = card.querySelector('.card-checkbox');
+            if (e.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+            card.classList.toggle('selected', checkbox.checked);
+            updateCounts();
+        });
+
         masterDeck.appendChild(card);
     });
-    updateDeckCount();
+    updateCounts();
 
+    // Sortable Initialization
     const lists = document.querySelectorAll('.card-list');
     lists.forEach(list => {
         new Sortable(list, {
@@ -321,16 +384,42 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             onAdd: function (evt) {
                 const limit = evt.to.getAttribute('data-limit');
                 if (limit && evt.to.children.length > parseInt(limit)) {
-                    alert("The Most Important section is limited to 5 cards.");
+                    alert("This section is limited to 5 cards.");
                     evt.from.appendChild(evt.item);
                 }
-                updateDeckCount();
+                updateCounts();
             },
-            onRemove: function() {
-                updateDeckCount();
-            }
+            onRemove: updateCounts
         });
     });
+
+    // Batch Move Logic
+    document.getElementById('move-selected-btn').onclick = function() {
+        const targetId = document.getElementById('target-column').value;
+        const targetList = document.getElementById(targetId);
+        const selectedCards = document.querySelectorAll('.value-card.selected');
+        const limit = targetList.getAttribute('data-limit');
+
+        if (limit && (targetList.children.length + selectedCards.length) > parseInt(limit)) {
+            alert(`The target section is limited to ${limit} cards. Move failed.`);
+            return;
+        }
+
+        selectedCards.forEach(card => {
+            const cb = card.querySelector('.card-checkbox');
+            cb.checked = false;
+            card.classList.remove('selected');
+            targetList.appendChild(card);
+        });
+
+        updateCounts();
+    };
+
+    document.getElementById('clear-selection-btn').onclick = function() {
+        document.querySelectorAll('.card-checkbox').forEach(cb => cb.checked = false);
+        document.querySelectorAll('.value-card').forEach(c => c.classList.remove('selected'));
+        updateCounts();
+    };
 
     document.getElementById('view-btn').onclick = function() {
         document.getElementById('main-container').classList.toggle('side-by-side');
